@@ -1,8 +1,12 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/placeholder/thenet/main/logo.png" width="120" alt="TheNet Logo" />
+  <img src="https://raw.githubusercontent.com/kisalnelaka/thenet/main/logo.png" width="120" alt="TheNet Logo" />
 </p>
 
 <h1 align="center">TheNet</h1>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kisalnelaka/thenet/main/preview.png" width="100%" alt="TheNet Preview" />
+</p>
 
 <p align="center">
   <strong>A premium, high-performance local Wi-Fi file explorer.</strong><br />
