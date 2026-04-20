@@ -27,7 +27,6 @@ const App = () => {
   const [vitals, setVitals] = useState({ battery: {}, cpu: {}, ram: {} });
   const [clipboard, setClipboard] = useState("");
   const [editor, setEditor] = useState({ open: false, content: "", path: "" });
-  const videoRef = useRef(null);
 
   useEffect(() => {
     const init = async () => {
@@ -68,6 +67,13 @@ const App = () => {
       setSelectedFiles([]);
     } catch (error) { console.error('Fetch failed:', error); }
     setLoading(false);
+  };
+
+  const fetchStorage = async () => {
+    try {
+      const res = await axios.get(`${activeDevice.url}/api/storage`);
+      setStorage(res.data);
+    } catch (e) {}
   };
 
   const fetchVitals = async () => {
@@ -165,6 +171,13 @@ const App = () => {
           </div>
         </div>
 
+        <div className="storage-widget mt-auto">
+          <div className="flex justify-between items-center text-[10px] mb-2 uppercase font-bold tracking-wider">
+            <span className="text-secondary">Storage</span><span className="text-cyan-400">{storage.percentage}%</span>
+          </div>
+          <div className="progress-bar"><div className="progress-fill" style={{ width: `${storage.percentage}%` }}></div></div>
+        </div>
+
         <div className="clipboard-widget mt-4">
            <p className="text-[10px] font-bold text-secondary uppercase tracking-[2px] mb-2 px-2">Bridge Clipboard</p>
            <textarea 
@@ -249,7 +262,7 @@ const App = () => {
                <div className="detail-stat"><span>TYPE</span><span>{selectedFile.isDirectory ? 'DIR' : selectedFile.name.split('.').pop().toUpperCase()}</span></div>
                <div className="flex gap-2 mt-4">
                   <button onClick={() => window.open(`${activeDevice.url}/api/download?path=${encodeURIComponent(selectedFile.path)}`)} className="flex-1 py-3 bg-cyan-400 text-black font-bold rounded-xl text-xs">EXTRACT</button>
-                  <button onClick={() => openEditor(selectedFile)} className="p-3 bg-white/5 rounded-xl border border-white/10"><Settings size={18} /></button>
+                  <button onClick={() => isText(selectedFile.name) && openEditor(selectedFile)} className="p-3 bg-white/5 rounded-xl border border-white/10"><Settings size={18} /></button>
                </div>
             </div>
           </>
@@ -284,8 +297,8 @@ const App = () => {
         .inset-0 { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
         .vital-row { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 500; color: var(--text-secondary); }
         .detail-stat { display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
-        .bg-sidebar-bg { background: var(--sidebar-bg); }
-        .border-bottom { border-bottom: 1px solid var(--glass-border); }
+        .bg-sidebar-bg { background: #0b0e14; }
+        .border-bottom { border-bottom: 1px solid rgba(255,255,255,0.08); }
       ` }} />
     </div>
   );
