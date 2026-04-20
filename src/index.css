@@ -65,6 +65,26 @@ body {
   margin-bottom: 24px;
 }
 
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--glass-white);
+  padding: 4px 12px 4px 4px;
+  border-radius: 50px;
+  border: 1px solid var(--glass-border);
+  height: 40px;
+}
+
+.user-profile img {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-cyan);
+  object-fit: cover;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
