@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <strong>A premium, high-performance local Wi-Fi file explorer.</strong><br />
-  Browse, download, and upload files from your phone directly using your laptop's browser.
+  <strong>A premium local wireless file management system.</strong><br />
+  Designed for high-performance file synchronization and exploration across local network devices.
 </p>
 
 <p align="center">
@@ -22,59 +22,54 @@
 
 ---
 
-## ✨ Features
+## Technical Specifications
 
-- 💎 **Premium UI**: Stunning glassmorphic design with a midnight-cyber aesthetic.
-- ⚡ **Lightning Fast**: Optimized for local network speed and minimal latency.
-- 📂 **Full Explorer**: Desktop-class browsing of your phone's file system.
-- 📤 **Drag & Drop**: Seamlessly upload files from your laptop to your phone.
-- 🖼️ **Smart Previews**: Integrated previews for images, videos, and documents.
-- 🛡️ **Safe & Local**: Your data never leaves your home Wi-Fi network.
+TheNet provides a centralized dashboard for managing multiple devices on a single local area network. It leverages modern web technologies to deliver a desktop-class experience directly within the browser.
 
-## 🚀 Getting Started
+### Core Capabilities
 
-### 1. Laptop Setup
-Clone the repository and build the production assets:
+*   Centralized Control: Manage multiple connected devices including mobile phones and desktop workstations from a single interface.
+*   Cross-Platform Support: Full compatibility with Windows, Linux, macOS, and Android.
+*   High-Performance Transfers: Optimized for local Wi-Fi speeds with minimal overhead.
+*   Intuitive Exploration: Advanced file navigation with sorting by name, size, and modification date.
+*   Secure Local Architecture: Data remains within the local network with no external cloud dependency.
+
+## Installation and Setup
+
+### Desktop Configuration
+
+To initialize the project on a workstation, execute the following commands in order:
 
 ```bash
-git clone https://github.com/yourusername/thenet.git
+git clone https://github.com/kisalnelaka/thenet.git
 cd thenet
 npm install
 npm run build
 ```
 
-### 2. Mobile Server Setup (Android/iOS)
-To run the server on your phone, you'll need a terminal emulator like **Termux** (Android).
+### Mobile Configuration
 
-1. Install Node.js: `pkg install nodejs`
-2. Grant storage access: `termux-setup-storage`
-3. Navigate to the project and start the engine:
-   ```bash
-   node server.js
-   ```
+For Android devices, a terminal environment such as Termux is required:
 
-### 3. Connect & Browse
-The terminal will display your local IP address:
-`💻 Laptop: Connect to http://192.168.1.5:3000`
+1. Install Node.js using the package manager: `pkg install nodejs`
+2. Configure storage permissions: `termux-setup-storage`
+3. Initialize the server: `node server.js`
 
-Simply open that URL on your laptop's browser and enjoy.
+## Network Integration
 
-## 🛠️ Tech Stack
+The server automatically identifies the local IP address upon startup. The dashboard will be accessible via the provided network address. For example: `http://192.168.1.5:3000`
 
-- **Frontend**: React, Framer Motion, Lucide Icons.
-- **Backend**: Node.js, Express 5, Multer.
-- **Styling**: Modern CSS Variables, Glassmorphism.
+To integrate additional devices:
+1. Ensure the server is active on the target device.
+2. Select the Add Device option in the dashboard sidebar.
+3. Input the IP address of the target device to establish a persistent connection.
 
-## 🤝 Contributing
+## Development Stack
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+*   Frontend Architecture: React 19, Framer Motion, Lucide Icons.
+*   Backend Infrastructure: Node.js, Express 5, Multer.
+*   Design System: Custom CSS with Glassmorphic design principles.
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-<p align="center">
-  Made with ❤️ for the Developer Community
-</p>
+This software is distributed under the MIT License. Refer to the LICENSE file for more information.

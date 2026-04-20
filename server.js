@@ -12,6 +12,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Device Identity (Can be customized via ENV)
+const DEVICE_NAME = process.env.DEVICE_NAME || os.hostname() || 'TheNet Device';
+const DEVICE_TYPE = process.platform === 'android' ? 'mobile' : 'desktop';
+
 // Root directory to explore - on Android/Termux this would be /sdcard
 // On Windows for testing, we'll use a local 'files' folder or the user's home
 const ROOT_DIR = process.platform === 'android' ? '/sdcard' : path.join(os.homedir(), 'Downloads');
@@ -45,7 +49,7 @@ function getLocalIP() {
   return 'localhost';
 }
 
-// API: List files
+// API: List files with enhanced metadata
 app.get('/api/files', (req, res) => {
   const currentPath = req.query.path || ROOT_DIR;
   
@@ -65,13 +69,35 @@ app.get('/api/files', (req, res) => {
         isDirectory: file.isDirectory(),
         size: stats.size,
         modified: stats.mtime,
-        path: filePath
+        path: filePath,
+        extension: file.isDirectory() ? '' : path.extname(file.name).slice(1)
       };
     });
     res.json({ currentPath, files: result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// API: Get device identity
+app.get('/api/identity', (req, res) => {
+  res.json({
+    name: DEVICE_NAME,
+    type: DEVICE_TYPE,
+    ip: getLocalIP(),
+    port: PORT
+  });
+});
+
+// API: Get storage stats
+app.get('/api/storage', (req, res) => {
+  // Mocking storage stats for now as cross-platform disk usage needs external libs
+  // In a real app, we'd use something like 'check-disk-space'
+  res.json({
+    total: 10 * 1024 * 1024 * 1024, // 10GB
+    used: 6.8 * 1024 * 1024 * 1024, // 6.8GB
+    percentage: 68
+  });
 });
 
 // API: Download file
