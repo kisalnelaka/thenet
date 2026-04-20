@@ -13,8 +13,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Device Identity (Can be customized via ENV)
-const DEVICE_NAME = process.env.DEVICE_NAME || os.hostname() || 'TheNet Device';
+const DEVICE_NAME = process.env.DEVICE_NAME || os.hostname() || 'Unknown Device';
 const DEVICE_TYPE = process.platform === 'android' ? 'mobile' : 'desktop';
+const OS_PLATFORM = process.platform;
 
 // Root directory to explore - on Android/Termux this would be /sdcard
 // On Windows for testing, we'll use a local 'files' folder or the user's home
@@ -84,6 +85,7 @@ app.get('/api/identity', (req, res) => {
   res.json({
     name: DEVICE_NAME,
     type: DEVICE_TYPE,
+    platform: OS_PLATFORM,
     ip: getLocalIP(),
     port: PORT
   });

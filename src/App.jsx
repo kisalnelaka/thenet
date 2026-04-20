@@ -1,63 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  LayoutDashboard, 
-  FolderOpen, 
-  Users, 
-  Clock, 
-  Star, 
-  Trash2, 
-  Cloud, 
-  Layers,
-  Search,
-  Bell,
-  Settings,
-  MoreVertical,
-  Grid,
-  List as ListIcon,
-  Download,
-  Upload,
-  ChevronRight,
-  HardDrive,
-  FileText,
-  Image as ImageIcon,
-  Film,
-  Music,
-  File as FileIcon,
-  Plus,
-  Smartphone,
-  Laptop,
-  Wifi
+  LayoutDashboard, FolderOpen, Clock, Star, Search, Bell, Settings,
+  MoreVertical, Grid, List as ListIcon, Download, Upload, 
+  Smartphone, Laptop, Wifi, Plus, File as FileIcon, Image as ImageIcon,
+  Film, Music, FileText, X, ChevronLeft, Cpu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Default to current host if in production
 const DEFAULT_HOST = import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin;
 
 const App = () => {
-  const [activeDevice, setActiveDevice] = useState({ name: 'This Device', url: DEFAULT_HOST, type: 'desktop' });
-  const [devices, setDevices] = useState([
-    { name: 'This Device', url: DEFAULT_HOST, type: 'desktop', active: true }
-  ]);
+  const [activeDevice, setActiveDevice] = useState({ name: 'Fetching...', url: DEFAULT_HOST, type: 'desktop' });
+  const [devices, setDevices] = useState([{ name: 'Main Console', url: DEFAULT_HOST, type: 'desktop', ip: 'Local' }]);
   const [files, setFiles] = useState([]);
   const [currentPath, setCurrentPath] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('grid');
-  const [sortBy, setSortBy] = useState('name');
-  const [sortOrder, setSortOrder] = useState('asc');
   const [selectedFile, setSelectedFile] = useState(null);
   const [history, setHistory] = useState([]);
 
-  // Load saved devices
+  // Load and Identify Devices
   useEffect(() => {
-    const saved = localStorage.getItem('thenet_devices');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Ensure "This Device" is always there and correctly pointed
-      const base = parsed.filter(d => d.url !== DEFAULT_HOST);
-      setDevices([{ name: 'This Device', url: DEFAULT_HOST, type: 'desktop', active: true }, ...base]);
-    }
+    const init = async () => {
+      // Identify current host first
+      try {
+        const res = await axios.get(`${DEFAULT_HOST}/api/identity`);
+        const main = { ...res.data, url: DEFAULT_HOST };
+        setActiveDevice(main);
+        
+        const saved = localStorage.getItem('thenet_devices');
+        let allDevices = [main];
+        if (saved) {
+          const others = JSON.parse(saved).filter(d => d.url !== DEFAULT_HOST);
+          allDevices = [...allDevices, ...others];
+        }
+        setDevices(allDevices);
+      } catch (e) {
+        console.error("Main identify failed");
+      }
+    };
+    init();
   }, []);
 
   useEffect(() => {
@@ -72,257 +55,265 @@ const App = () => {
       setCurrentPath(response.data.currentPath);
       if (response.data.files.length > 0) setSelectedFile(response.data.files[0]);
     } catch (error) {
-      console.error('Error fetching files:', error);
+      console.error('Connection failed:', error);
     }
     setLoading(false);
   };
 
-  const addDevice = async () => {
-    const ip = prompt("Enter Device IP (e.g. 192.168.1.5):");
-    if (!ip) return;
-    
-    const url = `http://${ip}:3000`;
-    try {
-      const res = await axios.get(`${url}/api/identity`);
-      const newDevice = { ...res.data, url, active: false };
-      const updated = [...devices, newDevice];
-      setDevices(updated);
-      localStorage.setItem('thenet_devices', JSON.stringify(updated));
-    } catch (e) {
-      alert("Could not connect to device. Make sure TheNet is running on it!");
+  const handleNavigate = (path) => {
+    setHistory(prev => [...prev, currentPath]);
+    fetchFiles(path);
+  };
+
+  const handleBack = () => {
+    if (history.length > 0) {
+      const prevPath = history[history.length - 1];
+      setHistory(prev => prev.slice(0, -1));
+      fetchFiles(prevPath);
     }
   };
 
-  const switchDevice = (device) => {
-    setActiveDevice(device);
-    setDevices(devices.map(d => ({ ...d, active: d.url === device.url })));
-    setHistory([]); // Clear history when switching devices
+  const handleUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      setLoading(true);
+      await axios.post(`${activeDevice.url}/api/upload?path=${encodeURIComponent(currentPath)}`, formData);
+      fetchFiles(currentPath);
+    } catch (error) {
+      alert('Upload failed. Check permissions on ' + activeDevice.name);
+    }
+    setLoading(false);
   };
 
-  const formatSize = (bytes) => {
-    if (!bytes) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const handleDownload = (file) => {
+    if (file.isDirectory) return;
+    window.open(`${activeDevice.url}/api/download?path=${encodeURIComponent(file.path)}`, '_blank');
+  };
+
+  const addDevice = async () => {
+    const ip = prompt("Enter Device IP (e.g. 192.168.100.X):");
+    if (!ip) return;
+    const url = ip.includes('://') ? ip : `http://${ip}:3000`;
+    try {
+      const res = await axios.get(`${url}/api/identity`);
+      const newDevice = { ...res.data, url };
+      const updated = [...devices.filter(d => d.url !== url), newDevice];
+      setDevices(updated);
+      localStorage.setItem('thenet_devices', JSON.stringify(updated));
+    } catch (e) {
+      alert("Failed to connect. Ensure your phone is on Wi-Fi and TheNet is running!");
+    }
   };
 
   const getFileIcon = (file, size = 20) => {
     if (file.isDirectory) return <FolderOpen className="text-cyan-400" size={size} />;
     const ext = file.name.split('.').pop().toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) return <ImageIcon className="text-purple-400" size={size} />;
-    if (['mp4', 'mov', 'avi'].includes(ext)) return <Film className="text-red-400" size={size} />;
-    if (['mp3', 'wav'].includes(ext)) return <Music className="text-green-400" size={size} />;
-    if (['pdf', 'txt', 'doc'].includes(ext)) return <FileText className="text-blue-400" size={size} />;
+    if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext)) return <ImageIcon className="text-purple-400" size={size} />;
+    if (['mp4', 'mov', 'avi', 'mkv'].includes(ext)) return <Film className="text-red-400" size={size} />;
+    if (['pdf', 'txt', 'doc', 'docx', 'zip', 'apk'].includes(ext)) return <FileText className="text-blue-400" size={size} />;
     return <FileIcon className="text-slate-400" size={size} />;
   };
-
-  const sortedFiles = [...files]
-    .filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => {
-      let valA = a[sortBy];
-      let valB = b[sortBy];
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
 
   return (
     <div className="app-layout">
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="logo-container">
-          <div className="logo-icon"><Layers size={18} color="white" /></div>
+          <Wifi size={24} className="text-white" />
           <span>THE NET</span>
         </div>
 
         <nav className="nav-group">
-          <div className="nav-item active"><LayoutDashboard size={20} /> Dashboard</div>
-          <div className="nav-item"><FolderOpen size={20} /> My Drive</div>
-          <div className="nav-item"><Clock size={20} /> Recent</div>
-          <div className="nav-item"><Star size={20} /> Starred</div>
+          <div className="nav-item active"><LayoutDashboard size={20} /> <span>Dashboard</span></div>
+          <div className="nav-item"><FolderOpen size={20} /> <span>My Drive</span></div>
+          <div className="nav-item"><Clock size={20} /> <span>Recent</span></div>
+          <div className="nav-item"><Star size={20} /> <span>Starred</span></div>
         </nav>
 
-        <div className="mt-6">
-          <div className="flex justify-between items-center mb-4 px-2">
-            <p className="text-xs font-bold text-secondary uppercase tracking-wider">Devices</p>
-            <button onClick={addDevice} className="text-cyan-400 hover:bg-cyan-400/10 p-1 rounded-md transition-colors">
-              <Plus size={16} />
-            </button>
+        <div style={{ marginTop: '40px' }}>
+          <div className="flex justify-between items-center mb-6 px-2">
+            <span className="text-xs font-bold text-secondary uppercase tracking-[2px]">Network Nodes</span>
+            <button onClick={addDevice} className="p-1.5 bg-cyan-400/10 text-cyan-400 rounded-lg hover:bg-cyan-400/20 transition-all"><Plus size={16} /></button>
           </div>
-          <div className="flex flex-col gap-2">
-            {devices.map((device) => (
+          <div className="flex flex-col gap-3">
+            {devices.map(d => (
               <div 
-                key={device.url}
-                onClick={() => switchDevice(device)}
-                className={`nav-item !py-2.5 ${device.active ? 'active' : ''}`}
+                key={d.url} 
+                onClick={() => setActiveDevice(d)} 
+                className={`nav-item device-node ${activeDevice.url === d.url ? 'active' : ''}`}
               >
-                {device.type === 'mobile' ? <Smartphone size={18} /> : <Laptop size={18} />}
-                <span className="text-sm truncate flex-1">{device.name}</span>
-                {device.active && <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f2ff]"></div>}
+                <div className={`p-2 rounded-xl ${activeDevice.url === d.url ? 'bg-cyan-400 text-black' : 'bg-white/5 text-secondary'}`}>
+                  {d.type === 'mobile' ? <Smartphone size={20} /> : <Laptop size={20} />}
+                </div>
+                <div className="flex-1 truncate">
+                  <p className="text-sm font-semibold truncate">{d.name}</p>
+                  <p className="text-[10px] text-secondary opacity-60 font-mono">{d.ip || 'Localhost'}</p>
+                </div>
+                {activeDevice.url === d.url && <div className="active-pulse"></div>}
               </div>
             ))}
           </div>
         </div>
 
         <div className="storage-widget mt-auto">
-          <div className="flex justify-between items-center text-sm">
-            <span>Storage</span>
-            <span className="text-cyan-400">68% Used</span>
+          <div className="flex justify-between items-center text-[10px] mb-2 uppercase font-bold tracking-wider">
+            <span className="text-secondary">Node Status</span>
+            <span className="text-cyan-400">Online</span>
           </div>
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: '68%' }}></div>
-          </div>
+          <div className="progress-bar"><div className="progress-fill" style={{ width: '100%' }}></div></div>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex flex-col overflow-hidden">
+      {/* Main Wrapper */}
+      <div className="main-wrapper">
         <header className="header">
-          <div className="search-bar">
-            <Search size={18} className="text-secondary" />
+          <div className="search-container">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary" size={18} />
             <input 
               type="text" 
-              placeholder={`Search in ${activeDevice.name}...`} 
+              className="search-input" 
+              placeholder={`Query ${activeDevice.name}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-xs bg-cyan-400/10 text-cyan-400 px-3 py-1.5 rounded-full border border-cyan-400/20">
-              <Wifi size={12} />
-              <span>Connected to {activeDevice.name}</span>
+          
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-[10px] font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-md text-secondary">
+              <Cpu size={12} />
+              <span>PLATFORM: {activeDevice.platform?.toUpperCase() || 'UNKNOWN'}</span>
             </div>
-            <div className="flex items-center gap-3 bg-white/5 p-1 pr-3 rounded-full border border-white/10">
-              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aleksei" alt="User" className="w-8 h-8 rounded-full" />
+            <div className="user-profile">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Kisal" className="avatar" alt="Avatar" />
               <div className="text-xs">
-                <p className="font-medium">Kisal N.</p>
-                <p className="text-green-400 text-[10px]">● online</p>
+                <p className="font-bold">Kisal N.</p>
+                <p className="text-green-400">● Online</p>
               </div>
             </div>
           </div>
         </header>
 
-        <div className="content-scroll">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-2xl font-semibold">{activeDevice.name}</h1>
-              <p className="text-xs text-secondary mt-1">{currentPath || 'Root Directory'}</p>
+        <main className="content-area">
+          <div className="flex justify-between items-center mb-10">
+            <div className="flex items-center gap-4">
+              {history.length > 0 && (
+                <button onClick={handleBack} className="glass-card !p-2 rounded-lg hover:text-cyan-400 transition-colors">
+                  <ChevronLeft size={20} />
+                </button>
+              )}
+              <div>
+                <h1 className="section-title">{activeDevice.name}</h1>
+                <p className="text-xs text-secondary -mt-4 font-mono">{currentPath || '/'}</p>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg"><Download size={20} /></button>
-              <label className="p-2 bg-white/5 text-secondary rounded-lg cursor-pointer hover:text-white transition-colors">
-                <Upload size={20} />
-                <input type="file" className="hidden" />
+            <div className="flex gap-3">
+              <button onClick={() => selectedFile && handleDownload(selectedFile)} className="glass-card !p-3 rounded-xl hover:text-cyan-400 transition-all"><Download size={20} /></button>
+              <label className="glass-card !p-3 rounded-xl hover:text-cyan-400 transition-all cursor-pointer">
+                <Upload size={20} /><input type="file" className="hidden" onChange={handleUpload} />
               </label>
             </div>
           </div>
 
-          <section className="mb-8">
-            <div className="quick-access">
-              {files.filter(f => f.isDirectory).slice(0, 4).map((folder, i) => (
-                <div key={folder.path} className="card" onDoubleClick={() => handleFolderClick(folder.path)}>
-                  <div className={`card-icon bg-gradient-to-br from-cyan-500/20 to-blue-500/20`}>
-                    <FolderOpen className="text-cyan-400" />
+          {loading ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="w-10 h-10 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <>
+              <div className="quick-grid">
+                {files.filter(f => f.isDirectory).slice(0, 4).map(folder => (
+                  <div key={folder.path} className="glass-card cursor-pointer" onDoubleClick={() => handleNavigate(folder.path)}>
+                    <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center">
+                      <FolderOpen className="text-cyan-400" />
+                    </div>
+                    <div className="flex-1 truncate">
+                      <p className="font-semibold truncate">{folder.name}</p>
+                      <p className="text-[10px] text-secondary uppercase font-bold">Directory</p>
+                    </div>
                   </div>
-                  <div className="flex-1 truncate">
-                    <p className="font-medium truncate">{folder.name}</p>
-                    <p className="text-xs text-secondary">Directory</p>
+                ))}
+              </div>
+
+              <div className="table-container">
+                <div className="flex justify-between items-center mb-6 px-2">
+                  <h2 className="text-sm font-bold uppercase tracking-[1px]">Data Nodes</h2>
+                  <div className="flex gap-3">
+                    <ListIcon size={16} className="text-cyan-400" />
+                    <Grid size={16} className="text-secondary opacity-30" />
                   </div>
-                  <MoreVertical size={16} className="text-secondary" />
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium">Files</h2>
-              <div className="flex gap-2 bg-white/5 p-1 rounded-lg">
-                <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-secondary'}`}><ListIcon size={16} /></button>
-                <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-secondary'}`}><Grid size={16} /></button>
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="h-64 flex items-center justify-center">
-                <div className="w-10 h-10 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : (
-              <table className="file-table">
-                <thead>
-                  <tr>
-                    <th className="w-10"><input type="checkbox" className="accent-cyan-400" /></th>
-                    <th className="cursor-pointer" onClick={() => setSortBy('name')}>Name</th>
-                    <th className="cursor-pointer" onClick={() => setSortBy('modified')}>Modified</th>
-                    <th className="cursor-pointer" onClick={() => setSortBy('size')}>Size</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <AnimatePresence>
-                    {sortedFiles.map((file) => (
-                      <motion.tr 
-                        key={file.path}
-                        layout
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className={`file-row group cursor-pointer ${selectedFile?.path === file.path ? 'bg-white/5' : ''}`}
-                        onClick={() => setSelectedFile(file)}
-                        onDoubleClick={() => file.isDirectory && handleFolderClick(file.path)}
+                
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '40px' }}>ID</th>
+                      <th>Object Name</th>
+                      <th>Last Modified</th>
+                      <th>Size</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase())).map((file, idx) => (
+                      <tr 
+                        key={file.path} 
+                        className={selectedFile?.path === file.path ? 'selected' : ''}
+                        onClick={() => setSelectedFile(file)} 
+                        onDoubleClick={() => file.isDirectory && handleNavigate(file.path)}
+                        style={{ cursor: 'pointer' }}
                       >
-                        <td><input type="checkbox" className="accent-cyan-400" checked={selectedFile?.path === file.path} readOnly /></td>
-                        <td><div className="flex items-center gap-3">{getFileIcon(file)}<span>{file.name}</span></div></td>
-                        <td className="text-sm text-secondary">{new Date(file.modified).toLocaleDateString()}</td>
-                        <td className="text-sm text-secondary">{file.isDirectory ? '--' : formatSize(file.size)}</td>
-                        <td><button onClick={() => !file.isDirectory && window.open(`${activeDevice.url}/api/download?path=${encodeURIComponent(file.path)}`)} className="p-2 opacity-0 group-hover:opacity-100 text-secondary hover:text-cyan-400"><Download size={16} /></button></td>
-                      </motion.tr>
+                        <td className="text-[10px] font-mono text-secondary">{idx + 1}</td>
+                        <td><div className="flex items-center gap-3">{getFileIcon(file)}<span className="font-medium">{file.name}</span></div></td>
+                        <td className="text-xs text-secondary font-mono">{new Date(file.modified).toLocaleDateString()}</td>
+                        <td className="text-xs text-secondary font-mono">{file.isDirectory ? '--' : (file.size / 1024 / 1024).toFixed(2) + ' MB'}</td>
+                        <td><button onClick={(e) => { e.stopPropagation(); handleDownload(file); }} className="p-2 opacity-0 group-hover:opacity-100 text-secondary hover:text-cyan-400"><Download size={16} /></button></td>
+                      </tr>
                     ))}
-                  </AnimatePresence>
-                </tbody>
-              </table>
-            )}
-          </section>
-        </div>
-      </main>
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </main>
+      </div>
 
-      {/* Details Pane */}
-      <aside className="details-pane">
-        <h2 className="text-lg font-medium">Details</h2>
+      <aside className="details-sidebar">
+        <div className="flex justify-between items-center"><h2 className="text-sm font-bold uppercase tracking-widest">Metadata</h2><X size={18} className="text-secondary cursor-pointer" onClick={() => setSelectedFile(null)} /></div>
         {selectedFile ? (
           <>
-            <div className="detail-card">
-              <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/20 mb-4 flex flex-col items-center">
-                {getFileIcon(selectedFile, 64)}
-                <p className="mt-4 font-semibold text-center truncate w-full">{selectedFile.name}</p>
-              </div>
+            <div className="preview-box">
+              {getFileIcon(selectedFile, 80)}
+              <p className="mt-6 font-bold truncate w-full text-center text-sm">{selectedFile.name}</p>
             </div>
-            <div className="flex flex-col gap-4 mt-4">
-              <div className="flex justify-between text-sm"><span className="text-secondary">Size</span><span>{formatSize(selectedFile.size)}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-secondary">Type</span><span>{selectedFile.isDirectory ? 'Folder' : selectedFile.name.split('.').pop().toUpperCase()}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-secondary">Location</span><span className="truncate ml-4 max-w-[150px]">{activeDevice.name}</span></div>
+            <div className="flex flex-col gap-5 mt-6">
+              <div className="flex justify-between text-xs font-mono"><span className="text-secondary">CAPACITY</span><span>{selectedFile.isDirectory ? '--' : (selectedFile.size / 1024 / 1024).toFixed(2) + ' MB'}</span></div>
+              <div className="flex justify-between text-xs font-mono"><span className="text-secondary">TYPE</span><span>{selectedFile.isDirectory ? 'DIR' : selectedFile.name.split('.').pop().toUpperCase()}</span></div>
+              <div className="flex justify-between text-xs font-mono"><span className="text-secondary">NODE</span><span className="truncate ml-4 max-w-[120px]">{activeDevice.name}</span></div>
+              {!selectedFile.isDirectory && (
+                <button onClick={() => handleDownload(selectedFile)} className="w-full mt-6 py-3 bg-cyan-400 text-black font-bold rounded-xl hover:bg-white transition-all shadow-[0_0_20px_rgba(0,242,255,0.3)]">EXTRACT DATA</button>
+              )}
             </div>
           </>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-secondary opacity-20">
-            <FileIcon size={48} className="mb-4" />
-            <p>Select a file</p>
+          <div className="flex-1 flex flex-col items-center justify-center opacity-10">
+            <Cpu size={64} /><p className="mt-4 text-xs font-bold uppercase">Ready for Input</p>
           </div>
         )}
       </aside>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .mt-6 { margin-top: 1.5rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .uppercase { text-transform: uppercase; }
-        .tracking-wider { letter-spacing: 0.05em; }
-        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
-        .flex-1 { flex: 1 1 0%; }
-        .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ml-4 { margin-left: 1rem; }
-        .max-w-\\[150px\\] { max-width: 150px; }
+        .device-node { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; }
+        .device-node:hover { background: rgba(255,255,255,0.05); transform: translateX(5px); }
+        .device-node.active { background: linear-gradient(90deg, rgba(0, 242, 255, 0.1) 0%, transparent 100%); border-left: 3px solid var(--accent-cyan); }
+        .active-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-cyan); animation: pulse 2s infinite; box-shadow: 0 0 10px var(--accent-cyan); }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+        .font-mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+        .tracking-\\[2px\\] { letter-spacing: 2px; }
+        .tracking-\\[1px\\] { letter-spacing: 1px; }
+        .data-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
       ` }} />
     </div>
   );
