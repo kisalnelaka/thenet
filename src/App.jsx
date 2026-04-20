@@ -12,8 +12,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 const DEFAULT_HOST = import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin;
 
 const App = () => {
-  const [activeDevice, setActiveDevice] = useState({ name: 'Fetching...', url: DEFAULT_HOST, type: 'desktop' });
-  const [devices, setDevices] = useState([{ name: 'Main Console', url: DEFAULT_HOST, type: 'desktop', ip: 'Local' }]);
+  const [activeDevice, setActiveDevice] = useState({ name: 'Node...', url: DEFAULT_HOST, type: 'desktop' });
+  const [devices, setDevices] = useState([{ name: 'Console', url: DEFAULT_HOST, type: 'desktop', ip: 'Local' }]);
   const [files, setFiles] = useState([]);
   const [currentPath, setCurrentPath] = useState('');
   const [loading, setLoading] = useState(true);
@@ -86,7 +86,7 @@ const App = () => {
   const fetchClipboard = async () => {
     try {
       const res = await axios.get(`${activeDevice.url}/api/clipboard`);
-      setClipboard(res.data.text);
+      setClipboard(res.data.text || "");
     } catch (e) {}
   };
 
@@ -139,53 +139,46 @@ const App = () => {
     <div className="app-layout">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div className="logo-container"><Wifi size={24} className="text-white" /><span>THE NET</span></div>
+        <div className="logo-container"><Wifi size={24} /><span>THE NET</span></div>
         <nav className="nav-group">
-          <div onClick={() => setViewTab('dashboard')} className={`nav-item ${viewTab === 'dashboard' ? 'active' : ''}`}><LayoutDashboard size={20} /> <span>Console</span></div>
-          <div onClick={() => { setViewTab('drive'); fetchFiles(''); }} className={`nav-item ${viewTab === 'drive' ? 'active' : ''}`}><FolderOpen size={20} /> <span>Explorer</span></div>
-          <div onClick={() => setViewTab('recent')} className={`nav-item ${viewTab === 'recent' ? 'active' : ''}`}><Clock size={20} /> <span>Chronos</span></div>
-          <div onClick={() => setViewTab('starred')} className={`nav-item ${viewTab === 'starred' ? 'active' : ''}`}><Star size={20} /> <span>Vault</span></div>
+          <div onClick={() => setViewTab('dashboard')} className={`nav-item ${viewTab === 'dashboard' ? 'active' : ''}`}><LayoutDashboard size={18} /> <span>Console</span></div>
+          <div onClick={() => { setViewTab('drive'); fetchFiles(''); }} className={`nav-item ${viewTab === 'drive' ? 'active' : ''}`}><FolderOpen size={18} /> <span>Explorer</span></div>
+          <div onClick={() => setViewTab('recent')} className={`nav-item ${viewTab === 'recent' ? 'active' : ''}`}><Clock size={18} /> <span>Chronos</span></div>
+          <div onClick={() => setViewTab('starred')} className={`nav-item ${viewTab === 'starred' ? 'active' : ''}`}><Star size={18} /> <span>Vault</span></div>
         </nav>
 
-        <div className="vitals-panel mt-8">
-           <p className="text-[10px] font-bold text-secondary uppercase tracking-[2px] mb-4 px-2">Node Vitals</p>
-           <div className="flex flex-col gap-3">
-             <div className="vital-row"><Zap size={14} className="text-yellow-400" /> <span>{vitals.battery?.level}% Battery</span></div>
-             <div className="vital-row"><Cpu size={14} className="text-cyan-400" /> <span>{vitals.cpu?.load}% Load</span></div>
-             <div className="vital-row"><Package size={14} className="text-purple-400" /> <span>{vitals.ram?.used}/{vitals.ram?.total}GB RAM</span></div>
-           </div>
+        <div className="vitals-panel">
+           <p className="text-[10px] font-bold text-secondary uppercase tracking-[2px] mb-4">Node Vitals</p>
+           <div className="vital-row"><Zap size={14} className="text-yellow-400" /> <span>{vitals.battery?.level}% Battery</span></div>
+           <div className="vital-row"><Cpu size={14} className="text-cyan-400" /> <span>{vitals.cpu?.load}% Load</span></div>
+           <div className="vital-row"><Package size={14} className="text-purple-400" /> <span>{vitals.ram?.used || 0}/{vitals.ram?.total || 0}GB RAM</span></div>
         </div>
 
-        <div className="mt-8 flex-1 overflow-auto">
-          <div className="flex justify-between items-center mb-6 px-2">
+        <div className="nodes-panel flex-1">
+          <div className="flex justify-between items-center mb-6">
             <span className="text-[10px] font-bold text-secondary uppercase tracking-[2px]">Mesh Nodes</span>
-            <button onClick={() => alert("Scanning network...")} className="p-1.5 bg-cyan-400/10 text-cyan-400 rounded-lg hover:bg-cyan-400/20 transition-all"><Globe size={14} /></button>
+            <button className="p-1.5 bg-cyan-400/10 text-cyan-400 rounded-lg"><Globe size={14} /></button>
           </div>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             {devices.map(d => (
-              <div key={d.url} onClick={() => setActiveDevice(d)} className={`nav-item device-node ${activeDevice.url === d.url ? 'active' : ''}`}>
-                <div className={`p-2 rounded-xl ${activeDevice.url === d.url ? 'bg-cyan-400 text-black' : 'bg-white/5 text-secondary'}`}>{d.type === 'mobile' ? <Smartphone size={18} /> : <Laptop size={18} />}</div>
-                <div className="flex-1 truncate"><p className="text-sm font-semibold truncate">{d.name}</p><p className="text-[9px] text-secondary opacity-60 font-mono">{d.ip}</p></div>
+              <div key={d.url} onClick={() => setActiveDevice(d)} className={`nav-item ${activeDevice.url === d.url ? 'active' : ''}`}>
+                <div className={`p-2 rounded-lg ${activeDevice.url === d.url ? 'bg-cyan-400 text-black' : 'bg-white/5 text-secondary'}`}>{d.type === 'mobile' ? <Smartphone size={16} /> : <Laptop size={16} />}</div>
+                <div className="flex-1 truncate"><p className="text-xs font-bold truncate">{d.name}</p><p className="text-[9px] opacity-50 font-mono">{d.ip}</p></div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="storage-widget mt-auto">
+        <div className="storage-widget mt-6">
           <div className="flex justify-between items-center text-[10px] mb-2 uppercase font-bold tracking-wider">
             <span className="text-secondary">Storage</span><span className="text-cyan-400">{storage.percentage}%</span>
           </div>
           <div className="progress-bar"><div className="progress-fill" style={{ width: `${storage.percentage}%` }}></div></div>
         </div>
 
-        <div className="clipboard-widget mt-4">
-           <p className="text-[10px] font-bold text-secondary uppercase tracking-[2px] mb-2 px-2">Bridge Clipboard</p>
-           <textarea 
-             className="glass-input text-[10px] h-16 w-full resize-none p-2" 
-             value={clipboard} 
-             onChange={(e) => syncClipboard(e.target.value)}
-             placeholder="Type to sync across nodes..."
-           />
+        <div className="clipboard-widget mt-6">
+           <p className="text-[10px] font-bold text-secondary uppercase tracking-[2px] mb-2">Clipboard Bridge</p>
+           <textarea className="glass-input text-[10px] h-20 w-full resize-none" value={clipboard} onChange={(e) => syncClipboard(e.target.value)} placeholder="Sync across nodes..." />
         </div>
       </aside>
 
@@ -193,23 +186,23 @@ const App = () => {
       <div className="main-wrapper">
         <header className="header">
           <div className="search-container">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary" size={18} />
-            <input type="text" className="search-input" placeholder={`Accessing ${activeDevice.name} data stream...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary" size={16} />
+            <input type="text" className="search-input" placeholder={`Accessing ${activeDevice.name} stream...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 text-[10px] font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-md text-secondary"><Shield size={12} className="text-green-400" /><span>SECURE NODE</span></div>
-            <div className="user-profile"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Kisal" className="avatar" alt="Avatar" /><div className="text-xs"><p className="font-bold">KISAL N.</p><p className="text-cyan-400">● SYSTEM ADMIN</p></div></div>
+            <div className="flex items-center gap-2 text-[10px] font-bold bg-white/5 border border-white/10 px-3 py-1.5 rounded-md text-secondary"><Shield size={12} className="text-green-400" /><span>SECURE NODE</span></div>
+            <div className="user-profile"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Kisal" className="avatar" alt="Avatar" /><div className="text-xs"><p className="font-bold uppercase">KISAL N.</p><p className="text-cyan-400 text-[10px]">● SYSTEM ADMIN</p></div></div>
           </div>
         </header>
 
         <main className="content-area">
-          <div className="flex justify-between items-center mb-10">
+          <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-4">
-              {history.length > 0 && <button onClick={() => { const p = history.pop(); setHistory([...history]); fetchFiles(p); }} className="glass-card !p-2 rounded-lg hover:text-cyan-400 transition-colors"><ChevronLeft size={20} /></button>}
-              <div><h1 className="section-title">{viewTab.toUpperCase()}</h1><p className="text-xs text-secondary -mt-4 font-mono">{currentPath || '/'}</p></div>
+              {history.length > 0 && <button onClick={() => { const p = history.pop(); setHistory([...history]); fetchFiles(p); }} className="glass-card !p-2 rounded-lg hover:text-cyan-400"><ChevronLeft size={20} /></button>}
+              <div><h1 className="section-title">{viewTab.toUpperCase()}</h1><p className="text-xs text-secondary -mt-1 font-mono">{currentPath || '/'}</p></div>
             </div>
             <div className="flex gap-3">
-              {selectedFiles.length > 0 && <button onClick={batchDownload} className="glass-card !p-3 rounded-xl bg-cyan-400/20 text-cyan-400 border-cyan-400/30 flex gap-2"><Package size={20} /><span>ZIP {selectedFiles.length}</span></button>}
+              {selectedFiles.length > 0 && <button onClick={batchDownload} className="glass-card !px-4 !py-2 bg-cyan-400 text-black border-none flex gap-2 items-center font-bold text-xs"><Package size={16} /> ZIP {selectedFiles.length}</button>}
               <label className="glass-card !p-3 rounded-xl hover:text-cyan-400 cursor-pointer"><Upload size={20} /><input type="file" className="hidden" onChange={async (e) => {
                 const fd = new FormData(); fd.append('file', e.target.files[0]);
                 await axios.post(`${activeDevice.url}/api/upload?path=${encodeURIComponent(currentPath)}`, fd); fetchFiles(currentPath);
@@ -221,18 +214,13 @@ const App = () => {
             <table className="data-table">
               <thead><tr><th style={{ width: '40px' }}><input type="checkbox" onChange={(e) => setSelectedFiles(e.target.checked ? files.map(f => f.path) : [])} /></th><th>Object Name</th><th>Access Date</th><th>Size</th><th>Actions</th></tr></thead>
               <tbody>
-                {files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase())).map((file, idx) => (
+                {files.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase())).map((file) => (
                   <tr key={file.path} className={selectedFile?.path === file.path ? 'selected' : ''} onClick={() => setSelectedFile(file)} onDoubleClick={() => file.isDirectory ? handleNavigate(file.path) : isText(file.name) ? openEditor(file) : null}>
                     <td><input type="checkbox" checked={selectedFiles.includes(file.path)} onChange={(e) => setSelectedFiles(prev => e.target.checked ? [...prev, file.path] : prev.filter(p => p !== file.path))} onClick={(e) => e.stopPropagation()} /></td>
-                    <td><div className="flex items-center gap-3">{file.isDirectory ? <FolderOpen className="text-cyan-400" size={18} /> : isImage(file.name) ? <ImageIcon className="text-purple-400" size={18} /> : <FileIcon className="text-slate-500" size={18} />}<span className="font-medium">{file.name}</span></div></td>
-                    <td className="text-[11px] text-secondary font-mono">{new Date(file.modified).toLocaleString()}</td>
+                    <td><div className="flex items-center gap-3">{file.isDirectory ? <FolderOpen className="text-cyan-400" size={16} /> : isImage(file.name) ? <ImageIcon className="text-purple-400" size={16} /> : <FileIcon className="text-slate-500" size={16} />}<span className="font-medium truncate max-w-[300px] inline-block">{file.name}</span></div></td>
+                    <td className="text-[11px] text-secondary font-mono">{new Date(file.modified).toLocaleDateString()}</td>
                     <td className="text-[11px] text-secondary font-mono">{file.isDirectory ? '--' : (file.size / 1024 / 1024).toFixed(2) + ' MB'}</td>
-                    <td>
-                      <div className="flex gap-2">
-                        {isText(file.name) && <button onClick={(e) => { e.stopPropagation(); openEditor(file); }} className="text-secondary hover:text-cyan-400"><FileText size={16} /></button>}
-                        <button onClick={(e) => { e.stopPropagation(); window.open(`${activeDevice.url}/api/download?path=${encodeURIComponent(file.path)}`); }} className="text-secondary hover:text-cyan-400"><Download size={16} /></button>
-                      </div>
-                    </td>
+                    <td><div className="flex gap-2"><button onClick={(e) => { e.stopPropagation(); window.open(`${activeDevice.url}/api/download?path=${encodeURIComponent(file.path)}`); }} className="text-secondary hover:text-cyan-400"><Download size={14} /></button></div></td>
                   </tr>
                 ))}
               </tbody>
@@ -243,62 +231,80 @@ const App = () => {
 
       {/* Details Sidebar */}
       <aside className="details-sidebar">
-        <div className="flex justify-between items-center"><h2 className="text-sm font-bold uppercase tracking-widest">Core Data</h2><X size={18} className="text-secondary cursor-pointer" onClick={() => setSelectedFile(null)} /></div>
+        <div className="flex justify-between items-center mb-6"><h2 className="text-xs font-bold uppercase tracking-widest">Metadata</h2><X size={18} className="text-secondary cursor-pointer" onClick={() => setSelectedFile(null)} /></div>
         {selectedFile ? (
           <>
-            <div className="preview-box overflow-hidden relative bg-black">
+            <div className="preview-box">
               {isImage(selectedFile.name) ? (
-                <img src={`${activeDevice.url}/api/preview?path=${encodeURIComponent(selectedFile.path)}`} className="w-full h-full object-contain" alt="Preview" />
+                <img src={`${activeDevice.url}/api/preview?path=${encodeURIComponent(selectedFile.path)}`} alt="Preview" />
               ) : isVideo(selectedFile.name) ? (
-                <video key={selectedFile.path} controls className="w-full h-full"><source src={`${activeDevice.url}/api/preview?path=${encodeURIComponent(selectedFile.path)}`} /></video>
+                <video key={selectedFile.path} controls><source src={`${activeDevice.url}/api/preview?path=${encodeURIComponent(selectedFile.path)}`} /></video>
               ) : isAudio(selectedFile.name) ? (
-                <div className="flex flex-col items-center"><Music size={48} className="text-cyan-400 mb-4" /><audio controls className="w-full"><source src={`${activeDevice.url}/api/preview?path=${encodeURIComponent(selectedFile.path)}`} /></audio></div>
+                <div className="flex flex-col items-center"><Music size={40} className="text-cyan-400 mb-4" /><audio controls className="w-full h-8"><source src={`${activeDevice.url}/api/preview?path=${encodeURIComponent(selectedFile.path)}`} /></audio></div>
               ) : (
-                <div className="flex flex-col items-center"><FileIcon size={64} className="text-slate-500" /><p className="mt-4 text-xs font-mono">{selectedFile.name}</p></div>
+                <div className="flex flex-col items-center opacity-50"><FileIcon size={48} /><p className="mt-4 text-[10px] font-mono">{selectedFile.name}</p></div>
               )}
             </div>
-            <div className="flex flex-col gap-4 mt-6">
-               <div className="detail-stat"><span>SIZE</span><span>{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span></div>
-               <div className="detail-stat"><span>TYPE</span><span>{selectedFile.isDirectory ? 'DIR' : selectedFile.name.split('.').pop().toUpperCase()}</span></div>
-               <div className="flex gap-2 mt-4">
-                  <button onClick={() => window.open(`${activeDevice.url}/api/download?path=${encodeURIComponent(selectedFile.path)}`)} className="flex-1 py-3 bg-cyan-400 text-black font-bold rounded-xl text-xs">EXTRACT</button>
-                  <button onClick={() => isText(selectedFile.name) && openEditor(selectedFile)} className="p-3 bg-white/5 rounded-xl border border-white/10"><Settings size={18} /></button>
+            <div className="flex flex-col gap-1 mt-2">
+               <div className="detail-stat"><span className="text-secondary uppercase">Capacity</span><span>{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span></div>
+               <div className="detail-stat"><span className="text-secondary uppercase">Type</span><span>{selectedFile.isDirectory ? 'DIR' : selectedFile.name.split('.').pop().toUpperCase()}</span></div>
+               <div className="detail-stat"><span className="text-secondary uppercase">Node</span><span className="truncate ml-4 max-w-[120px]">{activeDevice.name}</span></div>
+               <div className="flex gap-2 mt-6">
+                  <button onClick={() => window.open(`${activeDevice.url}/api/download?path=${encodeURIComponent(selectedFile.path)}`)} className="flex-1 py-3 bg-cyan-400 text-black font-bold rounded-xl text-[10px]">EXTRACT DATA</button>
+                  {isText(selectedFile.name) && <button onClick={() => openEditor(selectedFile)} className="p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-colors"><Settings size={18} /></button>}
                </div>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center opacity-10"><Globe size={64} /><p className="mt-4 text-[10px] font-bold">READY FOR DATA INGESTION</p></div>
+          <div className="flex-1 flex flex-col items-center justify-center opacity-10"><Globe size={48} /><p className="mt-4 text-[10px] font-bold">READY FOR INGESTION</p></div>
         )}
       </aside>
 
       {/* Text Editor Modal */}
       <AnimatePresence>
         {editor.open && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-10">
-            <div className="bg-sidebar-bg border border-white/10 rounded-2xl w-full max-w-4xl h-full flex flex-col overflow-hidden">
-              <div className="p-6 border-bottom border-white/10 flex justify-between items-center">
-                <h3 className="font-bold flex gap-3 items-center"><FileText size={20} className="text-cyan-400" /> {editor.path.split('/').pop()}</h3>
-                <div className="flex gap-4">
-                   <button onClick={saveEditor} className="flex gap-2 items-center bg-cyan-400 text-black px-4 py-2 rounded-lg font-bold text-sm"><Save size={16} /> Save Changes</button>
-                   <button onClick={() => setEditor({ ...editor, open: false })} className="p-2 text-secondary hover:text-white"><X size={24} /></button>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-6 md:p-12">
+            <div className="bg-sidebar-bg border border-white/10 rounded-2xl w-full max-w-5xl h-full flex flex-col overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
+                <h3 className="font-bold flex gap-3 items-center text-sm"><FileText size={18} className="text-cyan-400" /> {editor.path.split(/[\\/]/).pop()}</h3>
+                <div className="flex gap-3">
+                   <button onClick={saveEditor} className="flex gap-2 items-center bg-cyan-400 text-black px-5 py-2 rounded-lg font-bold text-xs hover:bg-white transition-colors"><Save size={14} /> Synchronize</button>
+                   <button onClick={() => setEditor({ ...editor, open: false })} className="p-2 text-secondary hover:text-white transition-colors"><X size={20} /></button>
                 </div>
               </div>
-              <textarea 
-                className="flex-1 bg-transparent p-10 font-mono text-sm outline-none resize-none text-slate-300"
-                value={editor.content}
-                onChange={(e) => setEditor({ ...editor, content: e.target.value })}
-              />
+              <textarea className="flex-1 bg-transparent p-8 font-mono text-xs md:text-sm outline-none resize-none text-slate-300 leading-relaxed" value={editor.content} onChange={(e) => setEditor({ ...editor, content: e.target.value })} />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .inset-0 { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
-        .vital-row { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 500; color: var(--text-secondary); }
-        .detail-stat { display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
-        .bg-sidebar-bg { background: #0b0e14; }
-        .border-bottom { border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .flex-1 { flex: 1 1 0%; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .gap-6 { gap: 1.5rem; }
+        .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .max-w-\\[300px\\] { max-width: 300px; }
+        .max-w-\\[120px\\] { max-width: 120px; }
+        .absolute { position: absolute; }
+        .left-4 { left: 1rem; }
+        .top-1/2 { top: 50%; }
+        .-translate-y-1/2 { transform: translateY(-50%); }
+        .hidden { display: none; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .mt-8 { margin-top: 2rem; }
+        .-mt-1 { margin-top: -0.25rem; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .selected { background: rgba(0, 242, 255, 0.05); }
       ` }} />
     </div>
   );
